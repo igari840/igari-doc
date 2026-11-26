@@ -1,0 +1,161 @@
+ 
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Igari DOC</title>
+<style>
+body {
+  font-family: sans-serif;
+  background: #edf4fc;
+  color: #174d85;
+  margin: 0;
+  padding: 20px;
+}
+main {
+  max-width: 480px;
+  margin: auto;
+  background: white;
+  padding: 24px;
+  border-radius: 16px;
+}
+h1,h2,h3 { text-align: center; }
+label {
+  display: block;
+  margin-top: 20px;
+  font-weight: bold;
+}
+input,select,button {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 14px;
+  margin-top: 8px;
+  font-size: 18px;
+  border: 1px solid #aaa;
+  border-radius: 8px;
+}
+button {
+  background: #174d85;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+.notice {
+  background: #edf4fc;
+  padding: 16px;
+  margin-top: 20px;
+  border-radius: 10px;
+  text-align: center;
+}
+small { color: #555; }
+</style>
+</head>
+<body>
+<main>
+<h1>Igari DOC</h1>
+<h3>いがり歯科・矯正歯科クリニック</h3>
+<h2>予約時間のお知らせ</h2>
+
+<label for="date">日付</label>
+<input type="date" id="date">
+
+<label for="time">時間</label>
+<input type="time" id="time" value="10:00">
+
+<label for="choice">メモの候補</label>
+<select id="choice" onchange="document.getElementById('memo').value=this.value">
+<option>診療予約日</option>
+<option>定期検診予約日の目安</option>
+<option>矯正治療予約日</option>
+<option>ホワイトニング予約日</option>
+<option value="">その他</option>
+</select>
+
+<label for="memo">メモ（自由記入）</label>
+<input id="memo" value="診療予約日">
+
+<div class="notice">
+🔔 登録時間の2時間前に<br>
+携帯電話でお知らせします。
+</div>
+
+<button onclick="register()">カレンダーに登録する</button>
+
+<p><small>
+カレンダーへの追加・保存を行ってください。
+通知音は携帯電話の設定に従います。
+定期検診予約日の目安は正式な予約ではありません。
+</small></p>
+
+</main>
+
+<script>
+function escapeICS(s) {
+  return s.replace(/\\/g,"\\\\")
+    .replace(/\r?\n/g,"\\n")
+    .replace(/,/g,"\\,")
+    .replace(/;/g,"\\;");
+}
+
+function formatDate(d) {
+  return d.toISOString()
+    .replace(/[-:]/g,"")
+    .replace(/\.\d{3}/,"");
+}
+
+function register() {
+  const date = document.getElementById("date").value;
+  const time = document.getElementById("time").value;
+  const memo = document.getElementById("memo").value;
+
+  if (!date || !time) {
+    alert("日付と時間を入力してください。");
+    return;
+  }
+
+  const start = new Date(date+"T"+time+":00+09:00");
+  const end = new Date(start.getTime()+1800000);
+
+  if (start <= new Date()) {
+    alert("未来の日時を入力してください。");
+    return;
+  }
+
+  const title = "いがり歯科・矯正歯科クリニック "+memo;
+
+  const ics = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Igari DOC//JP",
+    "CALSCALE:GREGORIAN",
+    "BEGIN:VEVENT",
+    "UID:"+Date.now()+"@igari-doc",
+    "DTSTAMP:"+formatDate(new Date()),
+    "DTSTART:"+formatDate(start),
+    "DTEND:"+formatDate(end),
+    "SUMMARY:"+escapeICS(title),
+    "BEGIN:VALARM",
+    "TRIGGER:-PT2H",
+    "ACTION:DISPLAY",
+    "DESCRIPTION:"+escapeICS(title),
+    "END:VALARM",
+    "END:VEVENT",
+    "END:VCALENDAR"
+  ].join("\r\n")+"\r\n";
+
+  const blob = new Blob([ics], {
+    type:"text/calendar;charset=utf-8"
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "igari-doc.ics";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),60000);
+}
+</script>
+</body>
+</html>
