@@ -6,65 +6,96 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Igari DOC</title>
 <style>
+* { box-sizing: border-box; }
 body {
   font-family: sans-serif;
   background: #edf4fc;
   color: #174d85;
   margin: 0;
-  padding: 20px;
+  padding: 12px;
+  font-size: 18px;
 }
 main {
   max-width: 480px;
   margin: auto;
   background: white;
-  padding: 24px;
+  padding: 20px;
   border-radius: 16px;
 }
-h1,h2,h3 { text-align: center; }
+h1 {
+  text-align: center;
+  font-size: 32px;
+  margin: 10px 0;
+}
+h2 {
+  text-align: center;
+  font-size: 25px;
+}
+h3 {
+  text-align: center;
+  font-size: 18px;
+}
 label {
   display: block;
   margin-top: 20px;
   font-weight: bold;
+  font-size: 20px;
 }
-input,select,button {
-  box-sizing: border-box;
+input, select, button {
   width: 100%;
-  padding: 14px;
+  padding: 15px;
   margin-top: 8px;
-  font-size: 18px;
+  font-size: 20px;
   border: 1px solid #aaa;
-  border-radius: 8px;
+  border-radius: 10px;
 }
 button {
   background: #174d85;
   color: white;
   border: none;
+  font-weight: bold;
   cursor: pointer;
 }
 .notice {
   background: #edf4fc;
   padding: 16px;
   margin-top: 20px;
-  border-radius: 10px;
+  border-radius: 12px;
   text-align: center;
+  font-weight: bold;
 }
-small { color: #555; }
+.guide {
+  background: #fff8df;
+  color: #333;
+  padding: 16px;
+  border-radius: 10px;
+  margin-top: 16px;
+  line-height: 1.8;
+}
+small {
+  color: #555;
+  font-size: 14px;
+}
 </style>
 </head>
 <body>
 <main>
+
 <h1>Igari DOC</h1>
 <h3>いがり歯科・矯正歯科クリニック</h3>
 <h2>予約時間のお知らせ</h2>
 
-<label for="date">日付</label>
+<p>次回の予約日時を入力してください。</p>
+
+<label for="date">① 日付</label>
 <input type="date" id="date">
 
-<label for="time">時間</label>
+<label for="time">② 時間</label>
 <input type="time" id="time" value="10:00">
 
-<label for="choice">メモの候補</label>
-<select id="choice" onchange="document.getElementById('memo').value=this.value">
+<label for="choice">③ メモ</label>
+<select id="choice"
+ onchange="document.getElementById('memo').value=this.value">
 <option>診療予約日</option>
 <option>定期検診予約日の目安</option>
 <option>矯正治療予約日</option>
@@ -72,20 +103,32 @@ small { color: #555; }
 <option value="">その他</option>
 </select>
 
-<label for="memo">メモ（自由記入）</label>
-<input id="memo" value="診療予約日">
+<input id="memo" value="診療予約日"
+ placeholder="自由に記入できます">
 
 <div class="notice">
 🔔 登録時間の2時間前に<br>
 携帯電話でお知らせします。
 </div>
 
-<button onclick="register()">カレンダーに登録する</button>
+<button onclick="register()">
+カレンダーに登録する
+</button>
+
+<div class="guide" id="guide" hidden>
+<strong>あと少しで登録完了です！</strong><br>
+① ダウンロードしたファイルを開く。<br>
+②「追加」または「すべてを追加」を押す。<br>
+③ カレンダーに保存されたことを確認する。
+</div>
 
 <p><small>
-カレンダーへの追加・保存を行ってください。
-通知音は携帯電話の設定に従います。
-定期検診予約日の目安は正式な予約ではありません。
+※このサービスは予約忘れ防止用です。<br>
+※医院への予約・変更はできません。<br>
+※定期検診予約日の目安は正式な予約ではありません。<br>
+※通知音は携帯電話の設定に従います。<br>
+※予約変更時は古い予定を削除してください。<br>
+※個人情報や入力内容は医院に送信されません。
 </small></p>
 
 </main>
@@ -107,7 +150,8 @@ function formatDate(d) {
 function register() {
   const date = document.getElementById("date").value;
   const time = document.getElementById("time").value;
-  const memo = document.getElementById("memo").value;
+  const memo = document.getElementById("memo").value.trim()
+    || "診療予約日";
 
   if (!date || !time) {
     alert("日付と時間を入力してください。");
@@ -117,12 +161,13 @@ function register() {
   const start = new Date(date+"T"+time+":00+09:00");
   const end = new Date(start.getTime()+1800000);
 
-  if (start <= new Date()) {
-    alert("未来の日時を入力してください。");
+  if (start.getTime() <= Date.now()+7200000) {
+    alert("通知を設定するため、現在より2時間以上先の日時を入力してください。");
     return;
   }
 
-  const title = "いがり歯科・矯正歯科クリニック "+memo;
+  const title =
+    "いがり歯科・矯正歯科クリニック "+memo+" "+time;
 
   const ics = [
     "BEGIN:VCALENDAR",
@@ -135,6 +180,7 @@ function register() {
     "DTSTART:"+formatDate(start),
     "DTEND:"+formatDate(end),
     "SUMMARY:"+escapeICS(title),
+    "DESCRIPTION:"+escapeICS(memo+" "+date+" "+time),
     "BEGIN:VALARM",
     "TRIGGER:-PT2H",
     "ACTION:DISPLAY",
@@ -147,6 +193,7 @@ function register() {
   const blob = new Blob([ics], {
     type:"text/calendar;charset=utf-8"
   });
+
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -154,6 +201,9 @@ function register() {
   document.body.appendChild(a);
   a.click();
   a.remove();
+
+  document.getElementById("guide").hidden = false;
+
   setTimeout(()=>URL.revokeObjectURL(url),60000);
 }
 </script>
