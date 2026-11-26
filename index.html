@@ -119,7 +119,7 @@ small {
  placeholder="自由に記入できます">
 
 <div class="notice">
-🔔 登録時間の2時間前に<br>
+🔔 予約前日の16時（午後4時）に<br>
 携帯電話でお知らせします。
 </div>
 
@@ -174,10 +174,19 @@ function register() {
   const start = new Date(date+"T"+time+":00+09:00");
   const end = new Date(start.getTime()+1800000);
 
-  if (start.getTime() <= Date.now()+7200000) {
-    alert("現在より2時間以上先の日時を入力してください。");
+  const alarm = new Date(
+    new Date(date+"T16:00:00+09:00").getTime()
+    - 86400000
+  );
+
+  if (alarm.getTime() <= Date.now()) {
+    alert("前日の16時を過ぎているため、事前通知を設定できません。");
     return;
   }
+
+  const seconds = Math.round(
+    (start.getTime()-alarm.getTime())/1000
+  );
 
   const title =
     "いがり歯科・矯正歯科クリニック "+memo+" "+time;
@@ -195,10 +204,11 @@ function register() {
     "SUMMARY:"+escapeICS(title),
     "DESCRIPTION:"+escapeICS(
       memo+" "+date+" "+time+
+      "\n前日の16時（午後4時）にお知らせします。"+
       "\n個人用のお知らせです。医院への予約ではありません。"
     ),
     "BEGIN:VALARM",
-    "TRIGGER:-PT2H",
+    "TRIGGER:-PT"+seconds+"S",
     "ACTION:DISPLAY",
     "DESCRIPTION:"+escapeICS(title),
     "END:VALARM",
